@@ -1,5 +1,6 @@
 package com.example.eventhub.user;
 
+import com.example.eventhub.auth.RefreshToken;
 import com.example.eventhub.booking.Booking;
 import com.example.eventhub.enums.UserRole;
 import com.example.eventhub.event.Event;
@@ -33,6 +34,8 @@ public class User {
     private List<Booking> bookings = new ArrayList<>();
     @OneToMany(mappedBy = "user")
     private List<Review> reviews= new ArrayList<>();
+    @OneToMany(mappedBy = "user")
+    private List<RefreshToken> refreshTokens=new ArrayList<>();
 
     public User(){}
 
@@ -138,5 +141,13 @@ public class User {
 
     public void setReviews(List<Review> reviews) {
         this.reviews = reviews;
+    }
+
+    public List<RefreshToken> getRefreshTokens() {
+        return refreshTokens;
+    }
+
+    public void setRefreshTokens(List<RefreshToken> refreshTokens) {
+        this.refreshTokens = refreshTokens;
     }
 }

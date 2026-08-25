@@ -4,7 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 .env
-logs/api.logs
+logs/app.logs
 
 ### STS ###
 .apt_generated
