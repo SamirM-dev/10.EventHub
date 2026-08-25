@@ -1,6 +1,6 @@
 package com.example.eventhub.user;
 
-import com.example.eventhub.auth.RefreshToken;
+import com.example.eventhub.auth.jwt.RefreshToken;
 import com.example.eventhub.booking.Booking;
 import com.example.eventhub.enums.UserRole;
 import com.example.eventhub.event.Event;

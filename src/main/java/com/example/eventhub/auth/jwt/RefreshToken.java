@@ -1,4 +1,4 @@
-package com.example.eventhub.auth;
+package com.example.eventhub.auth.jwt;
 
 import com.example.eventhub.user.User;
 import jakarta.persistence.*;
