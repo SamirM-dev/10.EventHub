@@ -9,7 +9,8 @@ CREATE TABLE users(
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT uq_users_email UNIQUE (email),
-    CONSTRAINT uq_users_provider_provider_id UNIQUE (provider,provider_id)
+    CONSTRAINT uq_users_provider_provider_id UNIQUE (provider,provider_id),
+    CONSTRAINT ch_users_role CHECK ( role IN ('USER','ORGANIZER'))
 );
 
 CREATE TABLE events(
@@ -60,4 +61,13 @@ CREATE TABLE reviews(
     CONSTRAINT fk_reviews_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT ch_reviews_rating CHECK ( rating BETWEEN 1 AND 5),
     CONSTRAINT uq_reviews_event_user UNIQUE (event_id,user_id)
+);
+
+CREATE TABLE refresh_tokens(
+    id BIGSERIAL PRIMARY KEY ,
+    token VARCHAR(500) NOT NULL,
+    user_id BIGINT NOT NULL ,
+    expires_at TIMESTAMP NOT NULL ,
+
+    CONSTRAINT fk_refresh_tokens_user FOREIGN KEY (user_id) REFERENCES users(id)
 )
