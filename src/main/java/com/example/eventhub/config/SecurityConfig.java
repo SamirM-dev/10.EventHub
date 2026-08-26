@@ -4,6 +4,10 @@ import com.example.eventhub.auth.details.CustomUserDetailsService;
 import com.example.eventhub.auth.handling.MyAccessDeniedHandler;
 import com.example.eventhub.auth.handling.MyAuthenticationEntryPoint;
 import com.example.eventhub.auth.jwt.JwtTokenFilter;
+import com.example.eventhub.auth.oauth.MyFailureHandler;
+import com.example.eventhub.auth.oauth.MyOAuth2UserService;
+import com.example.eventhub.auth.oauth.MyOidcUserService;
+import com.example.eventhub.auth.oauth.MySuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +39,10 @@ public class SecurityConfig {
     private final MyAccessDeniedHandler accessDeniedHandler;
     private final MyAuthenticationEntryPoint authenticationEntryPoint;
     private final JwtTokenFilter jwtTokenFilter;
+    private final MySuccessHandler successHandler;
+    private final MyFailureHandler failureHandler;
+    private final MyOAuth2UserService oAuth2UserService;
+    private final MyOidcUserService oidcUserService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
@@ -69,8 +77,13 @@ public class SecurityConfig {
                                 .maxAgeInSeconds(31536000))
                         )
                 .cors(cors->cors.configurationSource(corsConfigurationSource()))
-                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
-        ;
+                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth->oauth
+                        .successHandler(successHandler)
+                        .failureHandler(failureHandler)
+                        .userInfoEndpoint(info->info
+                                .userService(oAuth2UserService)
+                                .oidcUserService(oidcUserService)));
 
         return http.build();
     }
