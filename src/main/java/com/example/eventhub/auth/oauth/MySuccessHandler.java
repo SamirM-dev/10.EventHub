@@ -1,6 +1,6 @@
 package com.example.eventhub.auth.oauth;
 
-import com.example.eventhub.auth.helper.OneTimeCodeStore;
+import com.example.eventhub.helper.OneTimeCodeStore;
 import com.example.eventhub.user.User;
 import com.example.eventhub.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;

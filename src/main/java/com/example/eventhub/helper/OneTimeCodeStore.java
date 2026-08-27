@@ -1,4 +1,4 @@
-package com.example.eventhub.auth.helper;
+package com.example.eventhub.helper;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.StringRedisTemplate;
