@@ -4,6 +4,7 @@ import com.example.eventhub.enums.EventCategory;
 import com.example.eventhub.enums.EventStatus;
 import com.example.eventhub.validation.ValidEventCategory;
 import com.example.eventhub.validation.ValidEventStatus;
+import com.example.eventhub.validation.ValidEventTime;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
@@ -13,6 +14,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+@ValidEventTime
 public record EventUpdateRequest(@NotBlank(message = "The title must be entered") String title,
                                  @NotBlank(message = "The description must be entered") String description,
                                  @NotBlank(message = "The category must be entered")@ValidEventCategory(message = "Invalid event's category") EventCategory category,
