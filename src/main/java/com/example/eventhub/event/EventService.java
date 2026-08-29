@@ -1,7 +1,9 @@
 package com.example.eventhub.event;
 
-import com.example.eventhub.booking.BookingRepository;
+import com.example.eventhub.auth.details.UserPrincipal;
+import com.example.eventhub.enums.EventCategory;
 import com.example.eventhub.enums.EventStatus;
+import com.example.eventhub.enums.UserRole;
 import com.example.eventhub.event.dto.EventCreateRequest;
 import com.example.eventhub.event.dto.EventResponse;
 import com.example.eventhub.event.dto.EventUpdateRequest;
@@ -9,9 +11,11 @@ import com.example.eventhub.helper.HelpForService;
 import com.example.eventhub.user.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -51,10 +55,76 @@ public class EventService {
         return toResponse(eventRepository.save(event));
     }
 
+    public List<EventResponse> getAll(String categoryFromUrl, Pageable pageable){
+        helpForService.isCorrectSort(pageable);
+        EventCategory category = categoryFromUrl!=null?EventCategory.valueOf(categoryFromUrl):null;
+        List<Event> events=eventRepository.getAllWithPaginationAndFilter(category,EventStatus.PUBLISHED,pageable).getContent();
+        return events.stream().map(this::toResponse).toList();
+    }
+
+    public EventResponse getById(UserPrincipal principal,Long id){
+        Event found=helpForService.idCheck(id,eventRepository,"Event");
+        boolean enoughPermission = principal==null?false:List.of(UserRole.ORGANIZER,UserRole.ADMIN).contains(principal.getUser().getRole());
+        if (!found.getStatus().equals(EventStatus.PUBLISHED)&&!enoughPermission){
+            throw new EntityNotFoundException("Event with id:"+id+" not found");
+        }
+        return toResponse(found);
+    }
+
+    public EventResponse publish(Long id){
+        Event found = helpForService.idCheck(id,eventRepository,"Event");
+        if (found.getStartTime().isBefore(LocalDateTime.now())){
+            throw new IllegalStateException("An expired event cannot be published");
+        }
+        if (!found.getStatus().equals(EventStatus.DRAFT)){
+            throw new IllegalStateException("Event is already published");
+        }
+        found.setStatus(EventStatus.PUBLISHED);
+        return toResponse(eventRepository.save(found));
+    }
+
+    //Доделать !!!
+    public EventResponse cancel(Long id){
+        Event found = helpForService.idCheck(id,eventRepository,"Event");
+        if (found.getStartTime().isBefore(LocalDateTime.now())){
+            throw new IllegalStateException("An expired event cannot be cancelled");
+        }
+        if (!found.getStatus().equals(EventStatus.PUBLISHED)){
+            throw new IllegalStateException("Only published events can be cancelled");
+        }
+
+        //ОТМЕНИТЬ У ВСЕХ БРОНИ
+        found.setStatus(EventStatus.CANCELLED);
+        return toResponse(eventRepository.save(found));
+    }
+
+    public EventResponse complete(Long id){
+        Event found = helpForService.idCheck(id,eventRepository,"Event");
+        if (!found.getEndTime().isBefore(LocalDateTime.now())){
+            throw new IllegalStateException("Events that have not been held cannot be completed");
+        }
+        if (!found.getStatus().equals(EventStatus.PUBLISHED)){
+            throw new IllegalStateException("Only published events can be completed");
+        }
+        found.setStatus(EventStatus.COMPLETED);
+        return toResponse(eventRepository.save(found));
+    }
+
+    public void delete(Long id){
+        Event found = helpForService.idCheck(id,eventRepository,"Event");
+        if (!List.of(EventStatus.DRAFT,EventStatus.CANCELLED).contains(found.getStatus())){
+            throw new IllegalStateException("The event status does not allow it to be deleted");
+        }
+
+        eventRepository.delete(found);
+    }
+
     public EventResponse toResponse(Event event){
         return new EventResponse(event.getId(), event.getTitle(), event.getDescription(), event.getCategory(), event.getVenue(),
                 event.getStartTime(),event.getEndTime(), event.getCapacity(), helpForService.calculateAvailableSeats(event),event.getPrice(),
                 event.getStatus(),event.getOrganizer().getId(),event.getCreatedAt());
     }
+
+
 
 }

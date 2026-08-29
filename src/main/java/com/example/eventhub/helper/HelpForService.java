@@ -5,12 +5,19 @@ import com.example.eventhub.event.Event;
 import com.example.eventhub.event.EventRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component(value = "helpForService")
 @RequiredArgsConstructor
 public class HelpForService {
+
+    private static final List<String> ALLOWED_FIELDS_FOR_SORT=List.of("id","title","category","venue","startTime","endTime","capacity","price","status","organizer.id");
+
 
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
@@ -27,6 +34,14 @@ public class HelpForService {
         int occupied=bookingRepository.countOccupiedSeatByEventId(event.getId());
         return capacity-occupied;
 
+    }
+
+    public void isCorrectSort(Pageable pageable){
+        for (Sort.Order order:pageable.getSort() ){
+            if (!ALLOWED_FIELDS_FOR_SORT.contains(order.getProperty())){
+                throw new IllegalArgumentException("Invalid sort field");
+            }
+        }
     }
 
     public boolean isOwner(Long eventId,Long userId){

@@ -1,4 +1,4 @@
-package com.example.eventhub;
+package com.example.eventhub.auth;
 
 import com.example.eventhub.auth.details.UserPrincipal;
 import com.example.eventhub.auth.dto.LoginRequest;

@@ -1,6 +1,6 @@
 package com.example.eventhub.unit;
 
-import com.example.eventhub.AuthService;
+import com.example.eventhub.auth.AuthService;
 import com.example.eventhub.auth.details.UserPrincipal;
 import com.example.eventhub.auth.dto.LoginRequest;
 import com.example.eventhub.auth.dto.RefreshRequest;
