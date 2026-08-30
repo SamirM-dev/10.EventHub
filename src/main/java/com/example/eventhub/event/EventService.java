@@ -1,6 +1,7 @@
 package com.example.eventhub.event;
 
 import com.example.eventhub.auth.details.UserPrincipal;
+import com.example.eventhub.booking.BookingRepository;
 import com.example.eventhub.enums.EventCategory;
 import com.example.eventhub.enums.EventStatus;
 import com.example.eventhub.enums.UserRole;
@@ -24,6 +25,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final HelpForService helpForService;
+    private final BookingRepository bookingRepository;
 
     public EventResponse create(EventCreateRequest request, User user){
         return toResponse(eventRepository.save(new Event(
@@ -87,18 +89,18 @@ public class EventService {
         return toResponse(eventRepository.save(found));
     }
 
-    //Доделать !!!
+
     @Transactional
     public EventResponse cancel(Long id){
         Event found = helpForService.idCheck(id,eventRepository,"Event");
         if (found.getStartTime().isBefore(LocalDateTime.now())){
-            throw new IllegalStateException("An expired event cannot be cancelled");
+            throw new IllegalStateException("Started event cannot be cancelled");
         }
         if (!found.getStatus().equals(EventStatus.PUBLISHED)){
             throw new IllegalStateException("Only published events can be cancelled");
         }
+        bookingRepository.updateBookingsToCancel(id);
 
-        //ОТМЕНИТЬ У ВСЕХ БРОНИ
         found.setStatus(EventStatus.CANCELLED);
         return toResponse(eventRepository.save(found));
     }

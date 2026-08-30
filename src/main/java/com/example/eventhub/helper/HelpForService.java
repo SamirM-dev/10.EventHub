@@ -3,6 +3,7 @@ package com.example.eventhub.helper;
 import com.example.eventhub.booking.BookingRepository;
 import com.example.eventhub.event.Event;
 import com.example.eventhub.event.EventRepository;
+import com.example.eventhub.review.ReviewRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ public class HelpForService {
 
     private final BookingRepository bookingRepository;
     private final EventRepository eventRepository;
+    private final ReviewRepository reviewRepository;
 
     @Transactional
     public <T>T idCheck(Long id, JpaRepository<T,Long> repository, String entity){
@@ -53,7 +55,11 @@ public class HelpForService {
     }
 
     public boolean isBookingOwner(Long bookingId,Long userId){
-        return bookingRepository.findById(bookingId).orElseThrow(()->new EntityNotFoundException("Event not found")).getUser().getId().equals(userId);
+        return bookingRepository.findById(bookingId).orElseThrow(()->new EntityNotFoundException("Booking not found")).getUser().getId().equals(userId);
+    }
+
+    public boolean isReviewOwner(Long reviewId,Long userId){
+        return reviewRepository.findById(reviewId).orElseThrow(()->new EntityNotFoundException("Review not found")).getUser().getId().equals(userId);
 
     }
 }

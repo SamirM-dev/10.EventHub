@@ -1,6 +1,7 @@
 package com.example.eventhub.unit;
 
 import com.example.eventhub.auth.details.UserPrincipal;
+import com.example.eventhub.booking.BookingRepository;
 import com.example.eventhub.enums.EventCategory;
 import com.example.eventhub.enums.EventStatus;
 import com.example.eventhub.enums.UserRole;
@@ -41,6 +42,8 @@ public class EventServiceTest {
     EventRepository eventRepository;
     @Mock
     HelpForService helpForService;
+    @Mock
+    BookingRepository bookingRepository;
     @InjectMocks
     EventService eventService;
 
@@ -316,7 +319,50 @@ public class EventServiceTest {
     @Nested
     @DisplayName("Тестирование метода отмены события")
     class CancelTest{
+        @Test
+        void cancel_NotExistingEvent_ThrowsException(){
+            when(helpForService.idCheck(any(),any(),any())).thenThrow(new EntityNotFoundException());
 
+            assertThatThrownBy(()->eventService.cancel(1L)).isInstanceOf(EntityNotFoundException.class);
+        }
+        @Test
+        void cancel_StartedEvent_ThrowsException(){
+            Event event = new Event();
+            event.setId(1L);
+            event.setStartTime(LocalDateTime.now().minusDays(2));
+            when(helpForService.idCheck(any(),any(),any())).thenReturn(event);
+
+            assertThatThrownBy(()->eventService.cancel(1L)).isInstanceOf(IllegalStateException.class).hasMessage("Started event cannot be cancelled");
+        }
+        @Test
+        void cancel_NotPublishedEvent_ThrowsException(){
+            Event event = new Event();
+            event.setId(1L);
+            event.setStartTime(LocalDateTime.now().plusDays(2));
+            event.setStatus(EventStatus.DRAFT);
+            when(helpForService.idCheck(any(),any(),any())).thenReturn(event);
+
+            assertThatThrownBy(()->eventService.cancel(1L)).isInstanceOf(IllegalStateException.class).hasMessage("Only published events can be cancelled");
+        }
+        @Test
+        void cancel_ValidData_ReturnsEventResponse(){
+            User user=new User();
+            user.setId(1L);
+            Event event = new Event();
+            event.setId(1L);
+            event.setStartTime(LocalDateTime.now().plusDays(2));
+            event.setStatus(EventStatus.PUBLISHED);
+            event.setOrganizer(user);
+            when(helpForService.idCheck(any(),any(),any())).thenReturn(event);
+            when(eventRepository.save(any())).thenReturn(event);
+            ArgumentCaptor<Event> captor=ArgumentCaptor.forClass(Event.class);
+
+            assertThat(eventService.cancel(1L)).isInstanceOf(EventResponse.class).extracting(EventResponse::status).isEqualTo(EventStatus.CANCELLED);
+            verify(eventRepository).save(captor.capture());
+            assertThat(captor.getValue().getStatus()).isEqualTo(EventStatus.CANCELLED);
+
+
+        }
     }
 
     @Nested

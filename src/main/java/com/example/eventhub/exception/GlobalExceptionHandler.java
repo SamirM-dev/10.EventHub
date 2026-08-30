@@ -83,6 +83,14 @@ public class GlobalExceptionHandler{
         return ResponseEntity.status(409).body(response);
     }
 
+    @ExceptionHandler(NoConfirmedBookingException.class)
+    public ResponseEntity<ErrorResponse> handleNoConfirmedBooking(NoConfirmedBookingException e,HttpServletRequest request){
+        ErrorResponse response = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(), HttpStatus.FORBIDDEN.getReasonPhrase(), e.getMessage(),request.getRequestURI()
+        );
+        return ResponseEntity.status(403).body(response);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(Exception e,HttpServletRequest request){
         ErrorResponse response = new ErrorResponse(
