@@ -19,10 +19,12 @@ import com.example.eventhub.user.UserRepository;
 import com.example.eventhub.user.dto.UserResponse;
 import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityNotFoundException;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.assertj.core.api.Assertions.*;
@@ -36,6 +38,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,12 +67,21 @@ public class AuthServiceTest {
 
         @Test
         void registerUser_ValidData_ReturnsUserResponse(){
+            RegisterRequest request=new RegisterRequest("testuser","testuser@mail.com","12345678", UserRole.USER);
             when(userRepository.findByEmail(any(String.class))).thenReturn(Optional.empty());
-            User user= new User("testuser","testuser@mail.com","12345678", UserRole.USER);
+            User user= new User(request.name(),request.email(),request.password(),request.role());
             user.setId(1L);
             when(userRepository.save(any())).thenReturn(user);
+            ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
 
-            assertThat(authService.register(new RegisterRequest("testuser","testuser@mail.com","12345678", UserRole.USER))).isInstanceOf(UserResponse.class);
+            assertThat(authService.register(request)).isInstanceOf(UserResponse.class);
+
+            verify(userRepository).save(captor.capture());
+            SoftAssertions.assertSoftly(soft->{
+                soft.assertThat(captor.getValue().getName()).isEqualTo(user.getName());
+                soft.assertThat(captor.getValue().getEmail()).isEqualTo(user.getEmail());
+                soft.assertThat(captor.getValue().getRole()).isEqualTo(user.getRole());
+            });
         }
 
         @Test
@@ -98,8 +110,16 @@ public class AuthServiceTest {
             when(jwtTokenProvider.generateAccessToken(any())).thenReturn("Access");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("Refresh");
             when(refreshTokenRepository.save(any())).thenReturn(null);
+            ArgumentCaptor<RefreshToken> captor=ArgumentCaptor.forClass(RefreshToken.class);
 
-            assertThat(authService.login(new LoginRequest("email","password"))).isNotNull().isInstanceOf(TokenResponse.class);
+
+            assertThat(authService.login(new LoginRequest("email","password"))).isNotNull().isInstanceOf(TokenResponse.class)
+                    .extracting(TokenResponse::getAccessToken,TokenResponse::getRefreshToken).containsExactly("Access","Refresh");
+
+            verify(refreshTokenRepository).save(captor.capture());
+            assertThat(captor.getValue().getToken()).isEqualTo("Refresh");
+
+
         }
         @Test
         void login_UserNotExists_ThrowsException(){
@@ -155,8 +175,13 @@ public class AuthServiceTest {
             when(jwtTokenProvider.generateAccessToken(any())).thenReturn("Access");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("Refresh");
             when(refreshTokenRepository.save(any())).thenReturn(null);
+            ArgumentCaptor<RefreshToken> captor=ArgumentCaptor.forClass(RefreshToken.class);
 
-            assertThat(authService.refresh(new RefreshRequest("Token"))).isInstanceOf(TokenResponse.class);
+            assertThat(authService.refresh(new RefreshRequest("Token"))).isInstanceOf(TokenResponse.class)
+                    .extracting(TokenResponse::getAccessToken,TokenResponse::getRefreshToken).containsExactly("Access","Refresh");
+
+            verify(refreshTokenRepository).save(captor.capture());
+            assertThat(captor.getValue().getToken()).isEqualTo("Refresh");
         }
     }
 
@@ -176,8 +201,13 @@ public class AuthServiceTest {
             when(jwtTokenProvider.generateAccessToken(any())).thenReturn("Access");
             when(jwtTokenProvider.generateRefreshToken(any())).thenReturn("Refresh");
             when(refreshTokenRepository.save(any())).thenReturn(null);
+            ArgumentCaptor<RefreshToken> captor=ArgumentCaptor.forClass(RefreshToken.class);
 
-            assertThat(authService.exchange(new ExchangeRequest("Code"))).isInstanceOf(TokenResponse.class);
+            assertThat(authService.exchange(new ExchangeRequest("Code"))).isInstanceOf(TokenResponse.class)
+                    .extracting(TokenResponse::getAccessToken,TokenResponse::getRefreshToken).containsExactly("Access","Refresh");
+
+            verify(refreshTokenRepository).save(captor.capture());
+            assertThat(captor.getValue().getToken()).isEqualTo("Refresh");
         }
     }
 

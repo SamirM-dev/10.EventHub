@@ -13,6 +13,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,7 +32,8 @@ public class EventService {
         ));
     }
 
-    public EventResponse update(Long id,EventUpdateRequest request){
+    @Transactional
+    public EventResponse update(Long id, EventUpdateRequest request){
         Event event =eventRepository.findById(id).orElseThrow(()->new EntityNotFoundException("Event with id:"+id+" not found"));
         int occupied =event.getCapacity()- helpForService.calculateAvailableSeats(event);
         if (request.capacity()<occupied){
@@ -46,6 +48,7 @@ public class EventService {
         event.setTitle(request.title());
         event.setDescription(request.description());
         event.setCategory(request.category());
+        event.setVenue(request.venue());
         event.setStartTime(request.startTime());
         event.setEndTime(request.endTime());
         event.setCapacity(request.capacity());
@@ -71,6 +74,7 @@ public class EventService {
         return toResponse(found);
     }
 
+    @Transactional
     public EventResponse publish(Long id){
         Event found = helpForService.idCheck(id,eventRepository,"Event");
         if (found.getStartTime().isBefore(LocalDateTime.now())){
@@ -84,6 +88,7 @@ public class EventService {
     }
 
     //Доделать !!!
+    @Transactional
     public EventResponse cancel(Long id){
         Event found = helpForService.idCheck(id,eventRepository,"Event");
         if (found.getStartTime().isBefore(LocalDateTime.now())){
@@ -98,6 +103,7 @@ public class EventService {
         return toResponse(eventRepository.save(found));
     }
 
+    @Transactional
     public EventResponse complete(Long id){
         Event found = helpForService.idCheck(id,eventRepository,"Event");
         if (!found.getEndTime().isBefore(LocalDateTime.now())){
@@ -110,6 +116,7 @@ public class EventService {
         return toResponse(eventRepository.save(found));
     }
 
+    @Transactional
     public void delete(Long id){
         Event found = helpForService.idCheck(id,eventRepository,"Event");
         if (!List.of(EventStatus.DRAFT,EventStatus.CANCELLED).contains(found.getStatus())){

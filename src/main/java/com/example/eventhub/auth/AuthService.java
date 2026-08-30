@@ -24,6 +24,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -39,6 +40,7 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final OneTimeCodeStore oneTimeCodeStore;
 
+    @Transactional
     public UserResponse register(RegisterRequest request){
        if ( userRepository.findByEmail(request.email()).isPresent()){
            throw new ResourceAlreadyExistsException("User with email: "+request.email()+" already exists");
@@ -47,6 +49,7 @@ public class AuthService {
        return toResponse(userRepository.save(new User(request.name(),request.email(),encoder.encode(request.password()),request.role())));
     }
 
+    @Transactional
     public TokenResponse login(LoginRequest request){
         User user=userRepository.findByEmail(request.email()).orElseThrow(()->new EntityNotFoundException("User with email:"+request.email()+" does not exists"));
         if (user.getPassword()==null){
@@ -64,6 +67,7 @@ public class AuthService {
         return toResponse(principal.getUser());
     }
 
+    @Transactional
     public TokenResponse refresh(RefreshRequest request){
        RefreshToken refreshToken = refreshTokenRepository.findByToken(request.refreshToken()).orElseThrow(()->new BadCredentialsException("Token does not exists"));
 
@@ -83,6 +87,7 @@ public class AuthService {
        return toResponseToken(access,refresh);
     }
 
+    @Transactional
     public TokenResponse exchange(ExchangeRequest request){
         Long userId=oneTimeCodeStore.consumeOAuth(request.code());
         if (userId==null){
@@ -97,6 +102,7 @@ public class AuthService {
         return toResponseToken(access,refresh);
     }
 
+    @Transactional
     public void logout(RefreshRequest request){
         refreshTokenRepository.delete(refreshTokenRepository.findByToken(request.refreshToken()).orElseThrow(()->new JwtException("Token not found")));
     }

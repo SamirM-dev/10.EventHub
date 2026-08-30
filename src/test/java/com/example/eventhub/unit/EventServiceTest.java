@@ -13,10 +13,12 @@ import com.example.eventhub.event.dto.EventUpdateRequest;
 import com.example.eventhub.helper.HelpForService;
 import com.example.eventhub.user.User;
 import jakarta.persistence.EntityNotFoundException;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,18 +49,31 @@ public class EventServiceTest {
     class CreateTest{
         @Test
         void createEvent_ValidData_ReturnsEventResponse(){
+            EventCreateRequest request = new EventCreateRequest("title","description", EventCategory.CONCERT,"venue",
+                    LocalDateTime.MIN,LocalDateTime.MAX,20,(BigDecimal.valueOf(10)));
             when(helpForService.calculateAvailableSeats(any())).thenReturn(10);
             User user=new User();
             user.setId(1L);
-            Event event=new Event();
+            Event event=new Event(
+                    request.title(), request.description(), request.category(), request.venue(), request.startTime(),
+                    request.endTime(),request.capacity(),request.price(),user);
             event.setId(1L);
-            event.setOrganizer(user);
             when(eventRepository.save(any())).thenReturn(event);
+            ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
 
-            assertThat(eventService.create(
-                    new EventCreateRequest("title","description", EventCategory.CONCERT,"venue",
-                    LocalDateTime.MIN,LocalDateTime.MAX,20,(BigDecimal.valueOf(10))),user)
-            ).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event));
+            assertThat(eventService.create(request,user)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event));
+
+            verify(eventRepository).save(captor.capture());
+            SoftAssertions.assertSoftly(soft->{
+                soft.assertThat(captor.getValue().getTitle()).isEqualTo(request.title());
+                soft.assertThat(captor.getValue().getDescription()).isEqualTo(request.description());
+                soft.assertThat(captor.getValue().getCategory()).isEqualTo(request.category());
+                soft.assertThat(captor.getValue().getVenue()).isEqualTo(request.venue());
+                soft.assertThat(captor.getValue().getStartTime()).isEqualTo(request.startTime());
+                soft.assertThat(captor.getValue().getEndTime()).isEqualTo(request.endTime());
+                soft.assertThat(captor.getValue().getCapacity()).isEqualTo(request.capacity());
+                soft.assertThat(captor.getValue().getPrice()).isEqualTo(request.price());
+            });
         }
     }
 
@@ -135,14 +150,28 @@ public class EventServiceTest {
             EventUpdateRequest request = new EventUpdateRequest("title","description", EventCategory.CONCERT,"venue",
                     LocalDateTime.now().plusDays(1),LocalDateTime.now().plusDays(2),100,(BigDecimal.valueOf(10)), EventStatus.PUBLISHED);
             when(helpForService.calculateAvailableSeats(event)).thenReturn(0);
-            Event updated=new Event("title","description", EventCategory.CONCERT,"venue",
-                    LocalDateTime.now().plusDays(1),LocalDateTime.now().plusDays(2),100,(BigDecimal.valueOf(10)),user);
+            Event updated=new Event(request.title(),request.description(),request.category(),request.venue(),
+                    request.startTime(),request.endTime(),request.capacity(),request.price(),user);
             updated.setId(1L);
             updated.setStatus(EventStatus.PUBLISHED);
             when(eventRepository.save(any())).thenReturn(updated);
+            ArgumentCaptor<Event> captor = ArgumentCaptor.forClass(Event.class);
 
 
             assertThat(eventService.update(1L,request)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(updated));
+
+            verify(eventRepository).save(captor.capture());
+            SoftAssertions.assertSoftly(soft->{
+                soft.assertThat(captor.getValue().getTitle()).isEqualTo(request.title());
+                soft.assertThat(captor.getValue().getDescription()).isEqualTo(request.description());
+                soft.assertThat(captor.getValue().getCategory()).isEqualTo(request.category());
+                soft.assertThat(captor.getValue().getVenue()).isEqualTo(request.venue());
+                soft.assertThat(captor.getValue().getStartTime()).isEqualTo(request.startTime());
+                soft.assertThat(captor.getValue().getEndTime()).isEqualTo(request.endTime());
+                soft.assertThat(captor.getValue().getCapacity()).isEqualTo(request.capacity());
+                soft.assertThat(captor.getValue().getPrice()).isEqualTo(request.price());
+                soft.assertThat(captor.getValue().getOrganizer()).isEqualTo(user);
+            });
         }
     }
 
@@ -150,7 +179,7 @@ public class EventServiceTest {
     @DisplayName("Тестирование метода получения всех события(с сортировкой и пагинацией)")
     class GetAllTest{
         @Test
-        void getAll_NullRrValidCategory_ReturnsListOfEventResponses(){
+        void getAll_NullOrValidCategory_ReturnsListOfEventResponses(){
             User user=new User();
             user.setId(1L);
             Event event=new Event();
@@ -279,7 +308,7 @@ public class EventServiceTest {
             when(helpForService.idCheck(any(),any(),any())).thenReturn(event);
             when(eventRepository.save(any())).thenReturn(event);
 
-            assertThat(eventService.publish(1L)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event));
+            assertThat(eventService.publish(1L)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event)).extracting(EventResponse::status).isEqualTo(EventStatus.PUBLISHED);
 
         }
     }
@@ -294,13 +323,13 @@ public class EventServiceTest {
     @DisplayName("Тестирование метода завершения события")
     class CompleteTest{
         @Test
-        void publish_NotFoundEvent_ThrowsException(){
+        void complete_NotFoundEvent_ThrowsException(){
             when(helpForService.idCheck(any(),any(),any())).thenThrow(new EntityNotFoundException());
 
             assertThatThrownBy(()->eventService.complete(1L)).isInstanceOf(EntityNotFoundException.class);
         }
         @Test
-        void publish_NotEnded_ThrowsException(){
+        void complete_NotEnded_ThrowsException(){
             User organizer=new User();
             organizer.setId(1L);
             organizer.setRole(UserRole.ORGANIZER);
@@ -313,7 +342,7 @@ public class EventServiceTest {
             assertThatThrownBy(()->eventService.complete(1L)).isInstanceOf(IllegalStateException.class).hasMessage("Events that have not been held cannot be completed");
         }
         @Test
-        void publish_NoPublishedEvent_ThrowsException(){
+        void complete_NoPublishedEvent_ThrowsException(){
             User organizer=new User();
             organizer.setId(1L);
             organizer.setRole(UserRole.ORGANIZER);
@@ -328,7 +357,7 @@ public class EventServiceTest {
 
         }
         @Test
-        void publish_ValidRequest_ReturnsEventResponse(){
+        void complete_ValidRequest_ReturnsEventResponse(){
             User organizer=new User();
             organizer.setId(1L);
             organizer.setRole(UserRole.ORGANIZER);
@@ -340,7 +369,7 @@ public class EventServiceTest {
             when(helpForService.idCheck(any(),any(),any())).thenReturn(event);
             when(eventRepository.save(any())).thenReturn(event);
 
-            assertThat(eventService.complete(1L)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event));
+            assertThat(eventService.complete(1L)).isInstanceOf(EventResponse.class).isEqualTo(eventService.toResponse(event)).extracting(EventResponse::status).isEqualTo(EventStatus.COMPLETED);
 
         }
 

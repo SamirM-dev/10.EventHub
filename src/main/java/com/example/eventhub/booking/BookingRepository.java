@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-@Repository
-public interface BookingRepository extends JpaRepository<Event,Long> {
+import java.util.List;
 
-    @Query(nativeQuery = true,value = "SELECT COALESCE(SUM(quantity),0) FROM bookings WHERE event_id=:id")
+@Repository
+public interface BookingRepository extends JpaRepository<Booking,Long> {
+
+    @Query("SELECT COALESCE(SUM(b.quantity),0) FROM Booking  b WHERE b.event.id=:id AND b.status='CONFIRMED'")
     int countOccupiedSeatByEventId(@Param("id") Long id);
+    List<Booking> findByUserId(Long id);
 }

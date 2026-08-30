@@ -40,19 +40,19 @@ public class EventController {
         return ResponseEntity.ok(eventService.getById(principal,id));
     }
 
-    @PreAuthorize("@helpForService.isOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
+    @PreAuthorize("@helpForService.isEventOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<EventResponse> update(@Valid@RequestBody EventUpdateRequest request, @PathVariable Long id){
         return ResponseEntity.ok(eventService.update(id,request));
     }
 
-    @PreAuthorize("@helpForService.isOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
+    @PreAuthorize("@helpForService.isEventOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
     @PatchMapping("{id}/publish")
     public ResponseEntity<EventResponse> publish(@PathVariable Long id){
         return ResponseEntity.ok(eventService.publish(id));
     }
 
-    @PreAuthorize("@helpForService.isOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
+    @PreAuthorize("@helpForService.isEventOwner(#id,authentication.principal.id) OR hasRole('ADMIN')")
     @PatchMapping("{id}/cancel")
     public ResponseEntity<EventResponse> cancel(@PathVariable Long id){
         return ResponseEntity.ok(eventService.cancel(id));
@@ -60,7 +60,7 @@ public class EventController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("{id}/complite")
-    public ResponseEntity<EventResponse> complite(@PathVariable Long id){
+    public ResponseEntity<EventResponse> complete(@PathVariable Long id){
         return ResponseEntity.ok(eventService.complete(id));
     }
 
