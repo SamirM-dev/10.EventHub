@@ -22,8 +22,7 @@ public class OneTimeCodeStore {
     }
 
     public Long consumeOAuth(String code){
-        String userId = redisTemplate.opsForValue().get(REDIS_OAUTH_PREFIX+code);
-        redisTemplate.delete(REDIS_OAUTH_PREFIX+code);
+        String userId = redisTemplate.opsForValue().getAndDelete(REDIS_OAUTH_PREFIX+code);
         if (userId==null){
             return null;
         }

@@ -50,12 +50,17 @@ public class JwtTokenProvider {
     }
 
     public boolean isExpired(String token){
-        return extractToken(token).getExpiration().before(new Date());
+        try {
+            return extractToken(token).getExpiration().before(new Date());
+        }
+        catch (ExpiredJwtException e){
+            return true;
+        }
     }
 
     public boolean isTokenValid(String token,UserPrincipal principal){
         try {
-            return isExpired(token)&&getUsername(token).equals(principal.getUsername());
+            return !isExpired(token)&&getUsername(token).equals(principal.getUsername());
         }
         catch (ExpiredJwtException e){
             throw new JwtException("The token has expired");
@@ -70,7 +75,7 @@ public class JwtTokenProvider {
             throw new JwtException("Invalid token signature");
         }
         catch (IllegalArgumentException e){
-            throw new JwtException("The token is empty or null.");
+            throw new JwtException("The token is empty or null");
         }
     }
 

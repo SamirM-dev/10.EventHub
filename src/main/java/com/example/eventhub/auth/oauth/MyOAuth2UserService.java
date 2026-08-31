@@ -19,21 +19,21 @@ public class MyOAuth2UserService extends DefaultOAuth2UserService {
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2=super.loadUser(userRequest);
-
         String provider = userRequest.getClientRegistration().getRegistrationId();
 
+        return processOAuth2User(oAuth2,provider);
+    }
+
+    public OAuth2User processOAuth2User(OAuth2User oAuth2, String provider) {
         String name = oAuth2.getAttribute("name");
         String email = oAuth2.getAttribute("email");
-        String providerId=String.valueOf(oAuth2.getAttribute("id"));
+        Object idAttribute = oAuth2.getAttribute("id");
+        String providerId = String.valueOf(idAttribute);
 
-        userRepository.findByProviderAndProviderId(provider,providerId)
-                .map(user -> {
-                    user.setName(name);
-                    user.setEmail(email);
-                    return userRepository.save(user);
-                })
-                .orElseGet(()-> userRepository.save(new User(name,email,provider,providerId, UserRole.USER)));
-
+        User u=userRepository.findByProviderAndProviderId(provider,providerId).orElseGet(()->new User(name,email,provider,providerId, UserRole.USER));
+        u.setName(name);
+        u.setEmail(email);
+        userRepository.save(u);
         return oAuth2;
     }
 }

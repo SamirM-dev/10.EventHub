@@ -51,15 +51,15 @@ public class HelpForService {
 
 
     public boolean isEventOwner(Long eventId, Long userId){
-        return eventRepository.findById(eventId).orElseThrow(()->new EntityNotFoundException("Event not found")).getOrganizer().getId().equals(userId);
+        return eventRepository.findById(eventId).map(event ->event.getOrganizer().getId().equals(userId)).orElse(false);
     }
 
     public boolean isBookingOwner(Long bookingId,Long userId){
-        return bookingRepository.findById(bookingId).orElseThrow(()->new EntityNotFoundException("Booking not found")).getUser().getId().equals(userId);
+        return bookingRepository.findById(bookingId).map(booking ->booking.getUser().getId().equals(userId)).orElse(false);
     }
 
     public boolean isReviewOwner(Long reviewId,Long userId){
-        return reviewRepository.findById(reviewId).orElseThrow(()->new EntityNotFoundException("Review not found")).getUser().getId().equals(userId);
+        return reviewRepository.findById(reviewId).map(review ->review.getUser().getId().equals(userId)).orElse(false);
 
     }
 }
