@@ -46,6 +46,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
+        System.out.println(">>> SecurityConfig.securityFilterChain() called <<<");
         http.authorizeHttpRequests(auth->auth
                 .requestMatchers(HttpMethod.OPTIONS,"/**").permitAll()
                 .requestMatchers("/api/v1/auth/register").permitAll()

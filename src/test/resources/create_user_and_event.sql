@@ -1,0 +1,2 @@
+INSERT INTO users(name,email,password,role,created_at) VALUES ('user','user@gmail.com','fds[f[ds[f[dsfds[fsdf','USER',current_timestamp);
+INSERT INTO events(title,description,category,venue,start_time,end_time,capacity,price,status,organizer_id,created_at) VALUES ('event1','it is event1','CONCERT','Baku','2026-08-31 14:30:00','2026-08-31 18:30:00',20,5.50,'DRAFT',1,current_timestamp);
