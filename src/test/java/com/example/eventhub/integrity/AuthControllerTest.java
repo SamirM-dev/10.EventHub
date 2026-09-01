@@ -10,7 +10,6 @@ import com.example.eventhub.auth.dto.RegisterRequest;
 import com.example.eventhub.auth.dto.TokenResponse;
 import com.example.eventhub.auth.jwt.JwtTokenProvider;
 import com.example.eventhub.auth.oauth.ExchangeRequest;
-import com.example.eventhub.config.SecurityConfig;
 import com.example.eventhub.config.TestSecurityConfig;
 import com.example.eventhub.enums.UserRole;
 import com.example.eventhub.user.User;

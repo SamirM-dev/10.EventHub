@@ -36,7 +36,7 @@ public class EventController {
     }
 
     @GetMapping("/{id}")
-        public ResponseEntity<EventResponse> getOne(@AuthenticationPrincipal(expression = "username != null ? this : null") UserPrincipal principal,@PathVariable Long id){
+        public ResponseEntity<EventResponse> getOne(@AuthenticationPrincipal(expression = "(#this instanceof T(com.example.eventhub.auth.details.UserPrincipal)) and username != null ? #this : null") UserPrincipal principal,@PathVariable Long id){
         return ResponseEntity.ok(eventService.getById(principal,id));
     }
 
