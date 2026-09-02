@@ -59,7 +59,7 @@ public class EventController {
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @PatchMapping("{id}/complite")
+    @PatchMapping("{id}/complete")
     public ResponseEntity<EventResponse> complete(@PathVariable Long id){
         return ResponseEntity.ok(eventService.complete(id));
     }

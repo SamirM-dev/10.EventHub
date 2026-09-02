@@ -3,6 +3,7 @@ package com.example.eventhub.booking;
 import com.example.eventhub.auth.details.UserPrincipal;
 import com.example.eventhub.booking.dto.BookingCreateRequest;
 import com.example.eventhub.booking.dto.BookingResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +28,7 @@ public class BookingController {
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/events/{eventId}/bookings")
-    public ResponseEntity<BookingResponse> create(@AuthenticationPrincipal UserPrincipal principal,@PathVariable Long eventId,@RequestBody BookingCreateRequest request){
+    public ResponseEntity<BookingResponse> create(@AuthenticationPrincipal UserPrincipal principal,@PathVariable Long eventId,@Valid @RequestBody BookingCreateRequest request){
         BookingResponse created = bookingService.create(principal.getUser(),eventId,request);
         return ResponseEntity.created(URI.create("/api/v1/events/"+eventId+"/bookings/"+created.id())).body(created);
     }

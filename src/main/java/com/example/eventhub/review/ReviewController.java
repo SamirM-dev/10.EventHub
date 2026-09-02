@@ -3,6 +3,7 @@ package com.example.eventhub.review;
 import com.example.eventhub.auth.details.UserPrincipal;
 import com.example.eventhub.review.dto.ReviewCreateRequest;
 import com.example.eventhub.review.dto.ReviewResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ import java.util.List;
 
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/events/{eventId}/reviews")
-    public ResponseEntity<ReviewResponse> getReviewsByEvent(@AuthenticationPrincipal UserPrincipal principal, @PathVariable Long eventId, @RequestBody ReviewCreateRequest request){
+    public ResponseEntity<ReviewResponse> create(@AuthenticationPrincipal UserPrincipal principal, @PathVariable Long eventId,@Valid @RequestBody ReviewCreateRequest request){
         ReviewResponse created= reviewService.create(principal.getUser(),eventId,request);
         return ResponseEntity.created(URI.create("/api/v1/events/"+eventId+"/reviews/"+created.id())).body(created);
     }

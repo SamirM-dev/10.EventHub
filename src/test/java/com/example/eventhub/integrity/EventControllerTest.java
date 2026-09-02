@@ -20,6 +20,8 @@ import com.example.eventhub.review.ReviewRepository;
 import com.example.eventhub.unit.HelpForServiceTest;
 import com.example.eventhub.user.User;
 import jakarta.persistence.EntityNotFoundException;
+import org.springdoc.webmvc.api.OpenApiWebMvcResource;
+import org.springframework.boot.webmvc.autoconfigure.WebMvcProperties;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,17 +36,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.postgresql.hostchooser.HostRequirement.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(EventController.class)
@@ -115,7 +119,19 @@ public class EventControllerTest {
     @Nested
     @DisplayName("Тестирование метода получения всех событий")
     class GetAllTest{
+        @Test
+        void getAll_ValidRequest_Returns200AndListOfEventResponse()throws Exception{
+            EventResponse response=new EventResponse(
+                    1L,"Event","Event",EventCategory.CONCERT,"Baku",LocalDateTime.of(2026,12,12,19,0,0)
+                    ,LocalDateTime.of(2026,12,15,19,0,0),50,10,BigDecimal.TWO,EventStatus.PUBLISHED,1L,LocalDateTime.now()
+            );
+            when(eventService.getAll(any(),any())).thenReturn(List.of(response));
 
+            mock.perform(get("/api/v1/events"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].title").value("Event"));
+
+        }
     }
 
     @Nested
@@ -193,24 +209,89 @@ public class EventControllerTest {
     @Nested
     @DisplayName("Тестирование метода публикации события")
     class PublishTest{
+        @Test
+        void publish_IllegalStateException_Returns409()throws Exception{
+            User owner=new User("Owner","owner@gmail.com","12345678",UserRole.ORGANIZER);
+            owner.setId(1L);
+            Event event=new Event();
+            event.setOrganizer(owner);
+            UserPrincipal principal = new UserPrincipal(owner);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
+            when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
+            when(eventService.publish(1L)).thenThrow(new IllegalStateException());
+
+            mock.perform(patch("/api/v1/events/1/publish").with(authentication(auth))).andExpect(status().isConflict());
+        }
+        @Test
+        void publish_ValidRequest_Returns200()throws Exception{
+            User owner=new User("Owner","owner@gmail.com","12345678",UserRole.ORGANIZER);
+            owner.setId(1L);
+            Event event=new Event();
+            event.setOrganizer(owner);
+            when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
+            UserPrincipal principal = new UserPrincipal(owner);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
+            event.setStatus(EventStatus.PUBLISHED);
+
+            mock.perform(patch("/api/v1/events/1/publish").with(authentication(auth))).andExpect(status().isOk());
+        }
 
     }
 
     @Nested
     @DisplayName("Тестирование метода отмены события")
     class CancelTest{
+        @Test
+        void cancel_NotOwnerButAdmin_Returns200()throws Exception{
+            User admin = new User("Admin","admin@gmail.com","12345678",UserRole.ADMIN);
+            User owner=new User("Owner","owner@gmail.com","12345678",UserRole.ORGANIZER);
+            owner.setId(1L);
+            Event event=new Event();
+            event.setOrganizer(owner);
+            when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
+            UserPrincipal principal = new UserPrincipal(admin);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
 
+
+            mock.perform(patch("/api/v1/events/1/cancel").with(authentication(auth))).andExpect(status().isOk());
+        }
     }
 
     @Nested
     @DisplayName("Тестирование метода завершения события")
     class CompleteTest{
+        @Test
+        void complete_NotExistsEvent_Returns404()throws Exception{
+            when(eventService.complete(1L)).thenThrow(new EntityNotFoundException());
+            User admin = new User("Admin","admin@gmail.com","12345678",UserRole.ADMIN);
+            UserPrincipal principal = new UserPrincipal(admin);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
 
+            mock.perform(patch("/api/v1/events/1/complete").with(authentication(auth))).andExpect(status().isNotFound());
+        }
+        @Test
+        void complete_ValidRequest_Returns200()throws Exception{
+            User admin = new User("Admin","admin@gmail.com","12345678",UserRole.ADMIN);
+            Event event=new Event();
+            when(eventRepository.findById(1L)).thenReturn(Optional.of(event));
+            UserPrincipal principal = new UserPrincipal(admin);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
+
+            mock.perform(patch("/api/v1/events/1/complete").with(authentication(auth))).andExpect(status().isOk());
+        }
     }
 
     @Nested
     @DisplayName("Тестирование метода удаления события")
     class DeleteTest{
+        @Test
+        void delete_ValidRequest_Returns200()throws Exception{
+            User admin = new User("Admin","admin@gmail.com","12345678",UserRole.ADMIN);
+            UserPrincipal principal = new UserPrincipal(admin);
+            Authentication auth = new UsernamePasswordAuthenticationToken(principal,null,principal.getAuthorities());
 
+            mock.perform(delete("/api/v1/events/1").with(authentication(auth))).andExpect(status().isNoContent());
+
+        }
     }
 }
